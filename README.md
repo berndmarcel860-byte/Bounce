@@ -7,7 +7,7 @@ This repository now contains **Bounce Bolt**, a one-touch endless neon arcade pr
 ### Run locally
 
 ```bash
-cd /home/runner/work/Bounce/Bounce
+cd /path/to/Bounce
 python -m http.server 8080
 ```
 

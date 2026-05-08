@@ -191,7 +191,7 @@
     if (state.combo >= 20 && state.t - state.lastFeedback > 2.4) { state.lastFeedback = state.t; flash('LEGENDARY DODGE', '#24f2ff', 500); }
 
     state.obstacles = state.obstacles.filter((ob) => { if (ob.x < -280) { state.pool.push(ob); return false; } return true; });
-    updateParticles(dt); updateTrail(); state.shake = Math.max(0, state.shake - dt * 24); setUI();
+    updateParticles(dt); updateTrail(dt); state.shake = Math.max(0, state.shake - dt * 24); setUI();
   }
 
   function drawBg() {
@@ -225,7 +225,7 @@
     ctx.shadowColor = c; ctx.shadowBlur = 24; ctx.fillStyle = rgba(c, 0.45); ctx.beginPath(); ctx.arc(player.x, player.y, player.r + 4 + pulse, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = c; ctx.beginPath(); ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
     drawTrail();
   }
-  function updateTrail() { player.trail.push({ x: player.x, y: player.y, life: 0.5, speed: Math.abs(player.vy) }); if (player.trail.length > 40) player.trail.shift(); player.trail.forEach((t) => t.life -= 1 / 60); player.trail = player.trail.filter((t) => t.life > 0); }
+  function updateTrail(dt) { player.trail.push({ x: player.x, y: player.y, life: 0.5, speed: Math.abs(player.vy) }); if (player.trail.length > 40) player.trail.shift(); player.trail.forEach((t) => t.life -= dt); player.trail = player.trail.filter((t) => t.life > 0); }
   function drawTrail() { const t = cosmetics.trails[save.selected.trail]; const c = ({ Lightning: '#24f2ff', Fire: '#ff7a2a', Ice: '#74e7ff', Pixel: '#57ff9e', Shadow: '#9ba7ff', Rainbow: '#ff2dbf', Plasma: '#be6dff', 'Digital Distortion': '#ffd24b' })[t] || '#24f2ff'; player.trail.forEach((p, i) => { ctx.fillStyle = rgba(c, p.life * (0.2 + Math.min(0.8, p.speed / 600))); ctx.beginPath(); ctx.arc(p.x - i * 0.6, p.y, Math.max(1, player.r * p.life * 0.7), 0, Math.PI * 2); ctx.fill(); }); }
 
   function emit(x, y, n, color) { for (let i = 0; i < n; i++) state.particles.push({ x, y, vx: rand(-180, 180), vy: rand(-180, 180), life: rand(0.25, 0.8), color }); if (state.particles.length > 400) state.particles.splice(0, state.particles.length - 400); }
