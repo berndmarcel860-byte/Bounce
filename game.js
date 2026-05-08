@@ -27,6 +27,7 @@
 
   const storageKey = 'bounce-bolt-save-v1';
   const save = loadSave();
+  let onInterstitialClose = null;
   hydrateDailySystems();
 
   function loadSave() {
@@ -104,11 +105,13 @@
   }
 
   function maybeShowInterstitial(onClose) {
-    if (save.premium.noAds || save.ad.interstitialEvery < 1 || save.ad.runCount % save.ad.interstitialEvery !== 0) {
+    const every = save.ad.interstitialEvery;
+    if (save.premium.noAds || every <= 0 || save.ad.runCount % every !== 0) {
       show(interstitialPanel, false);
       onClose();
       return;
     }
+    onInterstitialClose = onClose;
     show(interstitialPanel, true);
   }
 
@@ -340,7 +343,11 @@
   $('retry').addEventListener('click', () => startRun());
   $('to-menu').addEventListener('click', () => { state.mode = 'menu'; show(deathPanel, false); show(interstitialPanel, false); show(menu, true); setUI(); });
   $('continue').addEventListener('click', () => { if (!state.canContinue) return; state.canContinue = false; mission('continue', 1, true); player.invuln = 2; player.y = innerHeight * 0.5; player.vy = -180; state.mode = 'playing'; show(deathPanel, false); show(interstitialPanel, false); show(hud, true); flash('CONTINUE', '#57ff9e', 360); });
-  $('interstitial-close').addEventListener('click', () => { show(interstitialPanel, false); if (state.mode === 'dead') show(deathPanel, true); });
+  $('interstitial-close').addEventListener('click', () => {
+    show(interstitialPanel, false);
+    if (typeof onInterstitialClose === 'function') onInterstitialClose();
+    onInterstitialClose = null;
+  });
   $('pause').addEventListener('click', () => state.paused = !state.paused);
   $('subpanel-close').addEventListener('click', () => show(subpanel, false));
   addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; tap(); }, { passive: true });
