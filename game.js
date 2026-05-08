@@ -44,7 +44,9 @@
   function hydrateDailySystems() {
     const n = new Date();
     const today = n.toISOString().slice(0, 10);
-    const weekTag = `${n.getUTCFullYear()}-${Math.ceil((Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()) - Date.UTC(n.getUTCFullYear(), 0, 1)) / 604800000)}`;
+    const startOfYear = Date.UTC(n.getUTCFullYear(), 0, 1);
+    const dayIndex = Math.floor((Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()) - startOfYear) / 86400000);
+    const weekTag = `${n.getUTCFullYear()}-${Math.floor(dayIndex / 7) + 1}`;
     if (!save.missions.length || save.dailyRewardDay !== today) {
       save.missions = [
         { text: 'Reach score 25', goal: 25, progress: 0, type: 'score', reward: 60, done: false },
@@ -94,7 +96,7 @@
     state.sessions = state.sessions.slice(0, 10);
     mission('score', runScore); mission('time', state.runTime); mission('near', state.near, true); mission('combo', state.combo - 1, true);
     ach('first_death', 'Warmup Complete'); if (runScore >= 100) ach('score100', 'Century Runner'); if (runScore >= 250) ach('score250', 'Impossible Save');
-    syncOnlineLeaderboard(runScore);
+    updateOnlineLeaderboardCache(runScore);
     persist(); setUI();
     ui.finalScore.textContent = runScore; ui.bestScore.textContent = save.highScore;
     show(hud, false);
@@ -110,10 +112,10 @@
     show(interstitialPanel, true);
   }
 
-  function syncOnlineLeaderboard(score) {
+  function updateOnlineLeaderboardCache(score) {
     save.online.syncedRuns += 1;
     save.online.cloudBest = Math.max(save.online.cloudBest, score);
-    save.online.status = navigator.onLine ? 'Connected (low-latency sync)' : 'Offline cache';
+    save.online.status = navigator.onLine ? 'Online cache ready' : 'Offline cache';
     save.online.lastSync = new Date().toLocaleTimeString();
   }
   function ach(id, name) { if (!save.achievements[id]) save.achievements[id] = { name, unlockedAt: Date.now() }; }
@@ -287,7 +289,7 @@
       rows('Weekly', [['You', `${save.leaderboards.weekly}`], ['ArcStorm', `${Math.max(40, save.leaderboards.weekly - 15)}`], ['PulseDash', `${Math.max(35, save.leaderboards.weekly - 20)}`]]);
       rows('All-time', [['You', `${save.leaderboards.allTime}`], ['Legend-X', `${Math.max(120, save.leaderboards.allTime - 30)}`], ['NeoShift', `${Math.max(110, save.leaderboards.allTime - 40)}`]]);
       rows('Friends', [['You', `${save.leaderboards.friends}`], ['Alex', `${Math.max(10, save.leaderboards.friends - 8)}`], ['Mina', `${Math.max(9, save.leaderboards.friends - 11)}`]]);
-      rows('Online Sync', [['Status', save.online.status], ['Synced runs', `${save.online.syncedRuns}`], ['Cloud best', `${save.online.cloudBest}`], ['Last sync', save.online.lastSync]]);
+      rows('Online Sync', [['Status', save.online.status], ['Cached runs', `${save.online.syncedRuns}`], ['Cached best', `${save.online.cloudBest}`], ['Last update', save.online.lastSync]]);
     } else if (kind === 'daily') {
       subTitle.textContent = 'Daily Reward';
       const today = new Date().toISOString().slice(0, 10), claimed = save.dailyRewardDay === today;
