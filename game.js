@@ -95,7 +95,7 @@
     state.sessions = state.sessions.slice(0, 10);
     mission('score', runScore); mission('time', state.runTime); mission('near', state.near, true); mission('combo', state.combo - 1, true);
     ach('first_death', 'Warmup Complete'); if (runScore >= 100) ach('score100', 'Century Runner'); if (runScore >= 250) ach('score250', 'Impossible Save');
-    updateOnlineLeaderboardCache(runScore);
+    updateLocalLeaderboardCache(runScore);
     persist(); setUI();
     ui.finalScore.textContent = runScore; ui.bestScore.textContent = save.highScore;
     show(hud, false);
@@ -113,10 +113,10 @@
     show(interstitialPanel, true);
   }
 
-  function updateOnlineLeaderboardCache(score) {
+  function updateLocalLeaderboardCache(score) {
     save.online.syncedRuns += 1;
     save.online.cloudBest = Math.max(save.online.cloudBest, score);
-    save.online.status = navigator.onLine ? 'Cache updated' : 'Cache updated (offline)';
+    save.online.status = navigator.onLine ? 'Local cache updated' : 'Local cache updated (offline)';
     save.online.lastSync = new Date().toLocaleTimeString();
   }
   function ach(id, name) { if (!save.achievements[id]) save.achievements[id] = { name, unlockedAt: Date.now() }; }
