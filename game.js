@@ -45,9 +45,7 @@
   function hydrateDailySystems() {
     const n = new Date();
     const today = n.toISOString().slice(0, 10);
-    const startOfYear = Date.UTC(n.getUTCFullYear(), 0, 1);
-    const dayIndex = Math.floor((Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()) - startOfYear) / 86400000);
-    const weekTag = `${n.getUTCFullYear()}-${Math.floor(dayIndex / 7) + 1}`;
+    const weekTag = getIsoWeekTag(n);
     if (!save.missions.length || save.dailyRewardDay !== today) {
       save.missions = [
         { text: 'Reach score 25', goal: 25, progress: 0, type: 'score', reward: 60, done: false },
@@ -118,7 +116,7 @@
   function updateOnlineLeaderboardCache(score) {
     save.online.syncedRuns += 1;
     save.online.cloudBest = Math.max(save.online.cloudBest, score);
-    save.online.status = navigator.onLine ? 'Online cache ready' : 'Offline cache';
+    save.online.status = navigator.onLine ? 'Cache updated' : 'Cache updated (offline)';
     save.online.lastSync = new Date().toLocaleTimeString();
   }
   function ach(id, name) { if (!save.achievements[id]) save.achievements[id] = { name, unlockedAt: Date.now() }; }
@@ -338,6 +336,7 @@
   function aabb(x1, y1, w1, h1, x2, y2, w2, h2) { return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2; }
   function rectDist(px, py, rx, ry, rw, rh) { const dx = Math.max(rx - px, 0, px - (rx + rw)), dy = Math.max(ry - py, 0, py - (ry + rh)); return Math.hypot(dx, dy); }
   function lineDist(px, py, x1, y1, x2, y2) { const l2 = (x2 - x1) ** 2 + (y2 - y1) ** 2; if (l2 === 0) return Math.hypot(px - x1, py - y1); const t = clamp(((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2, 0, 1); return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1))); }
+  function getIsoWeekTag(date) { const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7); return `${d.getUTCFullYear()}-${week}`; }
 
   document.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', (e) => { const k = e.currentTarget.dataset.open; if (k === 'play') startRun(); else openPanel(k); }));
   $('retry').addEventListener('click', () => startRun());
