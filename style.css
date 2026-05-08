@@ -97,6 +97,10 @@ button:active { transform: scale(0.98); }
   letter-spacing: 0.06em;
   text-shadow: 0 0 15px rgba(255, 45, 191, 0.7);
 }
+#interstitial {
+  border-color: rgba(255, 210, 75, 0.6);
+  box-shadow: 0 0 36px rgba(255, 210, 75, 0.2), inset 0 0 16px rgba(255, 45, 191, 0.08);
+}
 .hidden { display: none !important; }
 .show { display: block; }
 #subpanel-content {

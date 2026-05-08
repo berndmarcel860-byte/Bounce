@@ -5,6 +5,7 @@
   const menu = $('menu');
   const hud = $('hud');
   const deathPanel = $('death');
+  const interstitialPanel = $('interstitial');
   const feedback = $('feedback');
   const subpanel = $('subpanel');
   const subTitle = $('subpanel-title');
@@ -32,7 +33,8 @@
     const defaults = {
       highScore: 0, coins: 0, xp: 0, selected: { skin: 0, trail: 0, explosion: 0, world: 0 },
       owned: { skin: [0], trail: [0], explosion: [0], world: [0] }, achievements: {}, missions: [], dailyRewardDay: '', weeklyTag: '',
-      leaderboards: { daily: 0, weekly: 0, allTime: 0, friends: 0 }, premium: { noAds: false, premiumThemes: false }
+      leaderboards: { daily: 0, weekly: 0, allTime: 0, friends: 0 }, premium: { noAds: false, premiumThemes: false },
+      ad: { runCount: 0, interstitialEvery: 3 }, online: { status: 'Pending', syncedRuns: 0, cloudBest: 0, lastSync: 'Never' }
     };
     try { return merge(defaults, JSON.parse(localStorage.getItem(storageKey) || '{}')); } catch { return defaults; }
   }
@@ -42,7 +44,7 @@
   function hydrateDailySystems() {
     const n = new Date();
     const today = n.toISOString().slice(0, 10);
-    const weekTag = `${n.getUTCFullYear()}-${Math.ceil((Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()) - Date.UTC(n.getUTCFullYear(), 0, 1)) / (7 * 86400000))}`;
+    const weekTag = `${n.getUTCFullYear()}-${Math.ceil((Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()) - Date.UTC(n.getUTCFullYear(), 0, 1)) / 604800000)}`;
     if (!save.missions.length || save.dailyRewardDay !== today) {
       save.missions = [
         { text: 'Reach score 25', goal: 25, progress: 0, type: 'score', reward: 60, done: false },
@@ -72,7 +74,7 @@
     Object.assign(state, { mode: 'playing', paused: false, t: 0, score: 0, combo: 1, comboTimer: 0, near: 0, runTime: 0, speed: 220, phase: 1, nextSpawn: 0, canContinue: true });
     state.obstacles.length = 0; state.particles.length = 0;
     player.y = innerHeight * 0.5; player.vy = 0; player.invuln = 0; player.trail.length = 0;
-    setUI(); show(menu, false); show(deathPanel, false); show(subpanel, false); show(hud, true);
+    setUI(); show(menu, false); show(deathPanel, false); show(interstitialPanel, false); show(subpanel, false); show(hud, true);
   }
   function tap() { if (state.mode === 'playing' && !state.paused) { player.vy = player.bounce; emit(player.x, player.y, 7, '#24f2ff'); sfx('tap'); } }
 
@@ -87,13 +89,32 @@
     save.leaderboards.daily = Math.max(save.leaderboards.daily, runScore);
     save.leaderboards.weekly = Math.max(save.leaderboards.weekly, runScore);
     save.leaderboards.friends = Math.max(save.leaderboards.friends, Math.floor(runScore * 0.92));
+    save.ad.runCount += 1;
     state.sessions.unshift({ score: runScore, duration: Math.floor(state.runTime), reason, when: new Date().toLocaleTimeString() });
     state.sessions = state.sessions.slice(0, 10);
     mission('score', runScore); mission('time', state.runTime); mission('near', state.near, true); mission('combo', state.combo - 1, true);
     ach('first_death', 'Warmup Complete'); if (runScore >= 100) ach('score100', 'Century Runner'); if (runScore >= 250) ach('score250', 'Impossible Save');
+    syncOnlineLeaderboard(runScore);
     persist(); setUI();
     ui.finalScore.textContent = runScore; ui.bestScore.textContent = save.highScore;
-    show(hud, false); show(deathPanel, true);
+    show(hud, false);
+    maybeShowInterstitial(() => show(deathPanel, true));
+  }
+
+  function maybeShowInterstitial(onClose) {
+    if (save.premium.noAds || save.ad.interstitialEvery < 1 || save.ad.runCount % save.ad.interstitialEvery !== 0) {
+      show(interstitialPanel, false);
+      onClose();
+      return;
+    }
+    show(interstitialPanel, true);
+  }
+
+  function syncOnlineLeaderboard(score) {
+    save.online.syncedRuns += 1;
+    save.online.cloudBest = Math.max(save.online.cloudBest, score);
+    save.online.status = navigator.onLine ? 'Connected (low-latency sync)' : 'Offline cache';
+    save.online.lastSync = new Date().toLocaleTimeString();
   }
   function ach(id, name) { if (!save.achievements[id]) save.achievements[id] = { name, unlockedAt: Date.now() }; }
   function mission(type, amount, add = false) {
@@ -253,7 +274,7 @@
           row.appendChild(b); subContent.appendChild(row);
         });
       });
-      rows('Monetization', [['Continue after death (Rewarded ad)', state.canContinue ? 'Ready' : 'Consumed'], ['Double rewards (Rewarded ad)', 'Available'], ['Unlock cosmetics faster', 'Rewarded optional'], ['Bonus coins', 'Rewarded optional'], ['Remove ads', save.premium.noAds ? 'Purchased' : 'Optional'], ['Exclusive cosmetics/themes', save.premium.premiumThemes ? 'Unlocked' : 'Optional']]);
+      rows('Monetization', [['Continue after death (Rewarded ad)', state.canContinue ? 'Ready' : 'Consumed'], ['Double rewards (Rewarded ad)', 'Available'], ['Unlock cosmetics faster', 'Rewarded optional'], ['Bonus coins', 'Rewarded optional'], ['Interstitial ads', save.premium.noAds ? 'Disabled by premium' : `Every ${save.ad.interstitialEvery} runs`], ['Remove ads', save.premium.noAds ? 'Purchased' : 'Optional'], ['Exclusive cosmetics/themes', save.premium.premiumThemes ? 'Unlocked' : 'Optional']]);
     } else if (kind === 'missions') {
       subTitle.textContent = 'Daily / Weekly / Achievements';
       rows('Daily Missions', save.missions.map((m) => [m.text, `${Math.floor(m.progress)}/${m.goal}${m.done ? ' ✓' : ''}`]));
@@ -266,6 +287,7 @@
       rows('Weekly', [['You', `${save.leaderboards.weekly}`], ['ArcStorm', `${Math.max(40, save.leaderboards.weekly - 15)}`], ['PulseDash', `${Math.max(35, save.leaderboards.weekly - 20)}`]]);
       rows('All-time', [['You', `${save.leaderboards.allTime}`], ['Legend-X', `${Math.max(120, save.leaderboards.allTime - 30)}`], ['NeoShift', `${Math.max(110, save.leaderboards.allTime - 40)}`]]);
       rows('Friends', [['You', `${save.leaderboards.friends}`], ['Alex', `${Math.max(10, save.leaderboards.friends - 8)}`], ['Mina', `${Math.max(9, save.leaderboards.friends - 11)}`]]);
+      rows('Online Sync', [['Status', save.online.status], ['Synced runs', `${save.online.syncedRuns}`], ['Cloud best', `${save.online.cloudBest}`], ['Last sync', save.online.lastSync]]);
     } else if (kind === 'daily') {
       subTitle.textContent = 'Daily Reward';
       const today = new Date().toISOString().slice(0, 10), claimed = save.dailyRewardDay === today;
@@ -314,8 +336,9 @@
 
   document.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', (e) => { const k = e.currentTarget.dataset.open; if (k === 'play') startRun(); else openPanel(k); }));
   $('retry').addEventListener('click', () => startRun());
-  $('to-menu').addEventListener('click', () => { state.mode = 'menu'; show(deathPanel, false); show(menu, true); setUI(); });
-  $('continue').addEventListener('click', () => { if (!state.canContinue) return; state.canContinue = false; mission('continue', 1, true); player.invuln = 2; player.y = innerHeight * 0.5; player.vy = -180; state.mode = 'playing'; show(deathPanel, false); show(hud, true); flash('CONTINUE', '#57ff9e', 360); });
+  $('to-menu').addEventListener('click', () => { state.mode = 'menu'; show(deathPanel, false); show(interstitialPanel, false); show(menu, true); setUI(); });
+  $('continue').addEventListener('click', () => { if (!state.canContinue) return; state.canContinue = false; mission('continue', 1, true); player.invuln = 2; player.y = innerHeight * 0.5; player.vy = -180; state.mode = 'playing'; show(deathPanel, false); show(interstitialPanel, false); show(hud, true); flash('CONTINUE', '#57ff9e', 360); });
+  $('interstitial-close').addEventListener('click', () => { show(interstitialPanel, false); if (state.mode === 'dead') show(deathPanel, true); });
   $('pause').addEventListener('click', () => state.paused = !state.paused);
   $('subpanel-close').addEventListener('click', () => show(subpanel, false));
   addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; tap(); }, { passive: true });
