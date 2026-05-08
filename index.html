@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <title>Bounce Bolt</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" aria-label="Bounce Bolt game canvas"></canvas>
+
+    <div id="menu" class="panel show">
+      <h1>BOUNCE BOLT</h1>
+      <p class="tagline">One Tap. One More Try.</p>
+      <div class="buttons">
+        <button data-open="play">Play</button>
+        <button data-open="shop">Shop</button>
+        <button data-open="missions">Missions</button>
+        <button data-open="leaderboards">Leaderboards</button>
+        <button data-open="daily">Daily Rewards</button>
+        <button data-open="settings">Settings</button>
+      </div>
+      <div class="stats-row">
+        <span>High Score: <strong id="high-score">0</strong></span>
+        <span>Coins: <strong id="coins">0</strong></span>
+        <span>XP: <strong id="xp">0</strong></span>
+      </div>
+    </div>
+
+    <div id="hud" class="hidden">
+      <div id="score">0</div>
+      <div id="combo">x1</div>
+      <button id="pause">II</button>
+    </div>
+
+    <div id="feedback" class="hidden"></div>
+
+    <div id="death" class="panel hidden">
+      <h2>RUN OVER</h2>
+      <p>Score: <strong id="final-score">0</strong></p>
+      <p>Best: <strong id="best-score">0</strong></p>
+      <div class="buttons">
+        <button id="retry">Retry</button>
+        <button id="continue">Continue (Rewarded)</button>
+        <button id="to-menu">Menu</button>
+      </div>
+    </div>
+
+    <div id="interstitial" class="panel hidden">
+      <h2>SPONSORED BREAK</h2>
+      <p class="small">Optional interstitial ad slot between some runs.</p>
+      <div class="buttons">
+        <button id="interstitial-close">Continue Run Summary</button>
+      </div>
+    </div>
+
+    <div id="subpanel" class="panel hidden">
+      <h2 id="subpanel-title"></h2>
+      <div id="subpanel-content"></div>
+      <button id="subpanel-close">Back</button>
+    </div>
+  </div>
+
+  <script src="/game.js"></script>
+</body>
+</html>
